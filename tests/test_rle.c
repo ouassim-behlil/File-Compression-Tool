@@ -7,6 +7,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <errno.h>
 #include <sys/types.h>
 
 static void expect_roundtrip_bytes(const uint8_t *data, size_t len) {
@@ -59,7 +61,11 @@ static void test_long_run_boundaries() {
 }
 
 static void gen_tmp_path(const char *prefix, char *path_out, size_t path_cap) {
-    system("mkdir -p build");
+    int mkrc = mkdir("build", 0777);
+    if (mkrc != 0 && errno != EEXIST) {
+        fprintf(stderr, "Failed to create build directory: %d\n", errno);
+        assert(0 && "mkdir build failed");
+    }
     unsigned r = (unsigned)rand();
     pid_t pid = getpid();
     snprintf(path_out, path_cap, "build/%s_%d_%u.bin", prefix, (int)pid, r);
