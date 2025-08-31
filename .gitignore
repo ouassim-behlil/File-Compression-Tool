@@ -1,0 +1,19 @@
+# Build artifacts
+bin/
+build/
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.gcda
+*.gcno
+*.gcov
+
+# Editor/OS
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
