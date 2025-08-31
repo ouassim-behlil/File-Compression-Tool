@@ -38,10 +38,9 @@ static void test_empty() {
 }
 
 static void test_literals_and_runs() {
-    // Pattern: literals then a long run
     uint8_t data[256];
-    for (int i = 0; i < 64; ++i) data[i] = (uint8_t)i; // literals
-    for (int i = 64; i < 256; ++i) data[i] = 0xAA;      // run
+    for (int i = 0; i < 64; ++i) data[i] = (uint8_t)i;
+    for (int i = 64; i < 256; ++i) data[i] = 0xAA;
     expect_roundtrip_bytes(data, sizeof(data));
 }
 
@@ -52,7 +51,6 @@ static void test_alternating() {
 }
 
 static void test_long_run_boundaries() {
-    // runs > 128 are split; ensure decode matches
     size_t len = 400;
     uint8_t *data = (uint8_t *)malloc(len);
     memset(data, 7, len);
@@ -72,14 +70,12 @@ static void gen_tmp_path(const char *prefix, char *path_out, size_t path_cap) {
 }
 
 static void test_file_roundtrip_binary() {
-    // Create binary with zeros, randoms, and repeats
     size_t len = 1024;
     uint8_t *data = (uint8_t *)malloc(len);
     srand(1234);
     for (size_t i = 0; i < len; ++i) data[i] = (uint8_t)rand();
-    for (size_t i = 200; i < 400; ++i) data[i] = 0x55; // ensure compressible region
+    for (size_t i = 200; i < 400; ++i) data[i] = 0x55;
 
-    // Write input
     char in_path[256], comp_path[256], out_path[256];
     gen_tmp_path("in", in_path, sizeof(in_path));
     FILE *f = fopen(in_path, "wb");
@@ -87,13 +83,11 @@ static void test_file_roundtrip_binary() {
     assert(fwrite(data, 1, len, f) == len);
     fclose(f);
 
-    // Compress and decompress
     gen_tmp_path("c", comp_path, sizeof(comp_path));
     gen_tmp_path("out", out_path, sizeof(out_path));
     assert(rle_compress_file(in_path, comp_path) == 0);
     assert(rle_decompress_file(comp_path, out_path) == 0);
 
-    // Read output
     FILE *fo = fopen(out_path, "rb");
     assert(fo);
     uint8_t *out = (uint8_t *)malloc(len);

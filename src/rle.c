@@ -19,7 +19,6 @@ static uint64_t read_le64(const uint8_t in[8]) {
     return v;
 }
 
-// Ensure capacity for dynamic buffer
 static int ensure_capacity(uint8_t **buf, size_t *cap, size_t needed) {
     if (needed <= *cap) return 1;
     size_t new_cap = *cap ? *cap : 64;
@@ -39,20 +38,16 @@ size_t rle_compress(const uint8_t *in, size_t in_size, uint8_t **out_buf) {
     size_t out_size = 0, out_cap = 0;
 
     if (in_size == 0) {
-        // Empty input -> empty output
         return 0;
     }
 
-    // Process using literal and run blocks
     size_t i = 0;
     while (i < in_size) {
-        // Detect run of repeated bytes starting at i
         size_t run_len = 1;
         while (i + run_len < in_size && in[i + run_len] == in[i] && run_len < 128) {
             run_len++;
         }
         if (run_len >= 2) {
-            // Emit run block: control with high bit set
             if (!ensure_capacity(out_buf, &out_cap, out_size + 2)) {
                 free(*out_buf);
                 *out_buf = NULL;
@@ -63,12 +58,10 @@ size_t rle_compress(const uint8_t *in, size_t in_size, uint8_t **out_buf) {
             (*out_buf)[out_size++] = in[i];
             i += run_len;
         } else {
-            // Build literal run up to 128 or until a run of >=2 would start
             size_t lit_start = i;
             size_t lit_len = 1;
             i++;
             while (i < in_size && lit_len < 128) {
-                // Check if a run of >=2 starts at i; if so, stop literal
                 size_t r = 1;
                 while (i + r < in_size && in[i + r] == in[i] && r < 128) r++;
                 if (r >= 2) break;
@@ -80,7 +73,7 @@ size_t rle_compress(const uint8_t *in, size_t in_size, uint8_t **out_buf) {
                 *out_buf = NULL;
                 return 0;
             }
-            uint8_t ctrl = (uint8_t)(lit_len - 1); // high bit 0
+            uint8_t ctrl = (uint8_t)(lit_len - 1);
             (*out_buf)[out_size++] = ctrl;
             memcpy(*out_buf + out_size, in + lit_start, lit_len);
             out_size += lit_len;
@@ -102,7 +95,7 @@ size_t rle_decompress(const uint8_t *in, size_t in_size, uint8_t **out_buf) {
             if (i >= in_size) {
                 free(*out_buf);
                 *out_buf = NULL;
-                return 0; // malformed
+                return 0;
             }
             uint8_t val = in[i++];
             if (!ensure_capacity(out_buf, &out_cap, out_size + len)) {
@@ -117,7 +110,7 @@ size_t rle_decompress(const uint8_t *in, size_t in_size, uint8_t **out_buf) {
             if (i + len > in_size) {
                 free(*out_buf);
                 *out_buf = NULL;
-                return 0; // malformed
+                return 0;
             }
             if (!ensure_capacity(out_buf, &out_cap, out_size + len)) {
                 free(*out_buf);
@@ -174,7 +167,7 @@ int rle_compress_file(const char *input_path, const char *output_path) {
     const uint8_t *payload = in;
     size_t payload_len = in_len;
     if (comp_len > 0 && comp_len < in_len) {
-        flags = 0x01; // RLE
+        flags = 0x01;
         payload = compressed;
         payload_len = comp_len;
     }
@@ -212,10 +205,8 @@ int rle_decompress_file(const char *input_path, const char *output_path) {
 
     int res = 0;
     if ((flags & 0x01) == 0) {
-        // stored
         res = write_entire_file(output_path, in + 22, (size_t)payload_size);
         if (res == 0 && (size_t)orig_size != (size_t)payload_size) {
-            // size mismatch indicates corruption
             res = -1;
         }
         free(in);
@@ -231,4 +222,3 @@ int rle_decompress_file(const char *input_path, const char *output_path) {
     free(out);
     return res;
 }
-
